@@ -17,38 +17,32 @@
           <div class="players col-3">
             <div class="list-players">
                 <p> Players </p>
-                <div class="player col-12">
+                <!-- <div class="player col-12">
                     <p>Player 1</p>
-                </div>
-                <div class="player col-12">
-                    <p>Player 2</p>
-                </div>
-                <div class="player col-12">
-                    <p>Player 3</p>
-                </div>
-                <div class="player col-12">
-                    <p>Player 4</p>
-                </div>
+                </div> -->
             </div>
           </div>
-          <div class="cartas-mesa col-3">Carta Mesa</div>
-           <div class="propriedades col-6">Propriedades</div>
+          <div class="last-card col-3"></div>
+          <div class="propertys col-6">Propriedades</div>
           <div class="w-100"></div>
-          <div class="cartas-mao col-6">Cartas de Ação</div>
-          <div class="chat col-6">Chat</div>
+          <div class="cartas-mao col-6">
+            <div class="yourCards"></div>
+          </div>
+          <div class="chat col-6">
+            <form class="chat-area" id="chat">
+                <input type="text" id="txtUsername" placeholder="digite seu usuario">
+                <div class="messages"></div>
+                <input type="text" id="txtMessage" placeholder="Digite sua mensagem">
+                <button type="submit">Enviar</button>
+            </form>
+          </div>
         </div>
         <div class="game">
-            <div class="yourCards"></div>
+           
             <div class="buttons">
                 <button id="btnPass" onclick="roundsEnd()">Passar a vez</input>
             </div>
         </div>
-        <form id="chat">
-            <input type="text" id="txtUsername" placeholder="digite seu usuario">
-            <div class="messages"></div>
-            <input type="text" id="txtMessage" placeholder="Digite sua mensagem">
-            <button type="submit">Enviar</button>
-        </form>
       </div>
     
 
@@ -62,11 +56,11 @@
             margin-top: 1%;
             height: 40px;
         }
-        .cartas-mesa{
+        .last-card{
             background-color: lightgrey;
             height: 450px;
         }
-        .propriedades{
+        .propertys{
             background-color: lightsteelblue;
             height: 450px;
         }
@@ -80,16 +74,38 @@
             /* margin-top: -300px; */
             height: 300px;
         }
+        .chat-area{
+            background-color: white;
+            height: 90%;
+            margin-top: 10px;
+        }
+        .messages{
+            background-color: lightgray;
+            height: 75%;
+            overflow: scroll;
+        }
+        .action-card{
+            width: 20%;
+            height: 40%;
+            padding-right: 1%;
+            margin-top: 1%;
+        }
+        .last-card-throw{
+            width: 50%;
+            height: 55%;
+            margin-left: 20%;
+            margin-top: 45%;
+        }
     </style>
 
-    <!-- conectar com o socket -->
     <script type="text/javascript">
         var socket = io('http://localhost:3000');
 
         var playerRound=0;
         var actualRound=0;
-        var playerObj={};
-        
+
+        var players=[];
+        var playerObj={};        
 
         $('#chat').submit(function(event){
             event.preventDefault();
@@ -129,15 +145,42 @@
             console.log("trocou de round "+round);
         });
 
+        socket.on('newPlayer', function(newPlayer){
+            if(playerObj.id!=newPlayer.id){
+                players.push(newPlayer);
+                playerEntered(newPlayer.id);
+                console.log("novo player entrou "+newPlayer.id);
+                console.log(players);
+            }
+        });
+
+        socket.on('previousPlayers',function(previousPlayers){
+            previousPlayers.forEach(newPlayer => {
+                players.push(newPlayer);
+                playerEntered(newPlayer.id);
+            });
+        });
+
+        socket.on('updateLastCard',function(card){
+            console.log("updateLastCard");
+            renderLastCard(card);
+        });
+
 
         function renderMessage(message){
             $('.messages').append('<div class="message"><strong>'+message.author+':</strong><span>'+message.message+'</span></div>');
         }
 
+        function renderLastCard(card){
+            console.log(card);
+            $('.last-card').empty();
+            $('.last-card').append('<img class="last-card-throw" src="./img/'+card+'.jpg"></img>');
+        }
+
         function renderCards(){
             $('.yourCards').empty();
             for(var i=0;i<playerObj.cards.length;i++){
-                $('.yourCards').append('<button onclick="throwCard('+i+')">'+playerObj.cards[i].name+'</button>');
+                $('.yourCards').append('<img class="action-card" src="./img/'+playerObj.cards[i].name+'.jpg" onclick="throwCard('+i+')"></img>');
             }
         }
 
@@ -148,9 +191,20 @@
         }
 
         function throwCard(index){
-            socket.emit('throwCard',playerObj.cards[index]);
-            playerObj.cards.splice(index,1);
-            renderCards();
+            if(playerRound==actualRound){
+                socket.emit('throwCard',playerObj.cards[index]);
+                renderLastCard(playerObj.cards[index].name);
+                playerObj.cards.splice(index,1);
+                renderCards();
+            }  
+        }
+
+        function playerEntered(id){
+            $('.list-players').append('<div class="player col-12" onclick="seePlayerCards('+id+')"> <p>Player '+id+'</p></div>');
+        }
+
+        function seePlayerCards(id){
+            console.log("você esta vendo na teoria as cartas do player "+id);
         }
 
 

@@ -27,8 +27,6 @@ let cartasNaMesa=[];
 //acabou de se conectar
 io.on('connection',socket=>{
 
-    console.log("conectou "+socket.id)
-
     var playerObj={'id':socket.id, 'cards':[
         {
             'name':'Carta 1',
@@ -45,7 +43,7 @@ io.on('connection',socket=>{
             'quantity':3
         },      
         {
-            'name':'Carta Rara',
+            'name':'Carta 3',
             'value':4,
             'type':'Carta rara',
             'desc':'É apenas uma carta rara',
@@ -57,6 +55,8 @@ io.on('connection',socket=>{
 
     socket.emit('initialRound',roundPlayer);
     socket.emit('previousMessages',messages);
+    socket.emit('previousPlayers',players)
+    socket.broadcast.emit('newPlayer',playerObj);
 
     socket.on('sendMessage', data=>{
         messages.push(data);
@@ -76,7 +76,8 @@ io.on('connection',socket=>{
 
     socket.on('throwCard',card=>{
         cartasNaMesa.push(card);
-        console.log(cartasNaMesa);
+        console.log("throw card");
+        socket.broadcast.emit('updateLastCard',card.name);
     });
 
 });
