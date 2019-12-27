@@ -9,6 +9,7 @@
     <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.js" integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
     <!-- <link rel="stylesheet" href="styles.css"> -->
 </head>
 <body>
@@ -16,7 +17,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2>Faça login ou se cadastre</h2>
-        <span class="close" onclick="openOrCloseModal()">&times;</span>
+        <!-- <span class="close" onclick="openOrCloseModal()">&times;</span> -->
       </div>
       <div class="modal-body">
         <p>Usuário</p>
@@ -46,7 +47,7 @@
           </div>
           <div class="chat col-6">
             <form class="chat-area" id="chat">
-                <input type="text" id="txtUsername" placeholder="digite seu usuario">
+                <!-- <input type="text" id="txtUsername" placeholder="digite seu usuario"> -->
                 <div class="messages"></div>
                 <input type="text" id="txtMessage" placeholder="Digite sua mensagem">
                 <button type="submit">Enviar</button>
@@ -184,7 +185,7 @@
             border-bottom-right-radius: 5px;
         }
 
-        .close {
+        /* .close {
             color: #ccc;
             float: right;
             font-size: 30px;
@@ -196,7 +197,7 @@
             color: #000;
             text-decoration: none;
             cursor: pointer;
-        }
+        } */
 
         @keyframes modalopen {
             from {
@@ -210,10 +211,13 @@
     </style>
 
     <script type="text/javascript">
-        var socket = io('http://localhost:3000');
+        var baseUrl='http://localhost:3000'
+        var socket = io(baseUrl);
 
         var playerRound=0;
         var actualRound=0;
+
+        var playerUser={};
 
         var players=[];
         var playerObj={};       
@@ -222,13 +226,11 @@
 
         $('#chat').submit(function(event){
             event.preventDefault();
-
-            var author= $('#txtUsername').val();
             var message=$('#txtMessage').val();
 
-            if(author.length && message.length){
+            if(message.length){
                 var obj={
-                    'author':author,
+                    'author':playerUser.userName,
                     'message':message
                 };
                 socket.emit('sendMessage',obj);
@@ -259,10 +261,10 @@
         });
 
         socket.on('newPlayer', function(newPlayer){
-            if(playerObj.id!=newPlayer.id){
+            if(playerObj.userId!=newPlayer.userId){
                 players.push(newPlayer);
-                playerEntered(newPlayer.id);
-                console.log("novo player entrou "+newPlayer.id);
+                playerEntered(newPlayer.userName);
+                console.log("novo player entrou "+newPlayer.userName);
                 console.log(players);
             }
         });
@@ -270,7 +272,7 @@
         socket.on('previousPlayers',function(previousPlayers){
             previousPlayers.forEach(newPlayer => {
                 players.push(newPlayer);
-                playerEntered(newPlayer.id);
+                playerEntered(newPlayer.userName);
             });
         });
 
@@ -324,22 +326,58 @@
             $('.modal').toggleClass('open');
         }
 
+        function initiateGame(user,data){
+            playerUser={
+                'userName':user.userName,
+                'password':user.password,
+                'userId':data.user._id,
+                'token':data.token
+            };
+            socket.emit('newPlayerAuthenticate',playerUser);
+            openOrCloseModal();
+        }
+
         function login(){
-            var user=getUserInfos();
-            console.log(user);
+            var user=getUserInfos()
+            var response= restServices('/auth/authenticate','POST',JSON.stringify(user)).then(function(data){
+                initiateGame(user,data);
+            }).catch(function(error){
+                console.log("falha ao fazer login");
+            });
         }
 
         function register(){
             var user=getUserInfos();
-            console.log(user);
+            restServices('/auth/register','POST',JSON.stringify(user)).then(function(data){
+                initiateGame(user,data);
+            }).catch(function(error){
+                console.log("falha ao cadastrar");
+            });
         }
 
         function getUserInfos(){
             var user={
-                username: $('#txtUsernameLogin').val(),
-                password: $('#txtPasswordLogin').val()
+                password: $('#txtPasswordLogin').val(),
+                userName: $('#txtUsernameLogin').val()
             }
             return user;
+        }
+
+        function restServices(local,type,data){
+            return new Promise(function(resolve, reject) {
+                $.ajax({
+                    'url':baseUrl+''+local,
+                    'type':type,
+                    'data':data,
+                    'contentType': "application/json",
+                    success: function(data) {
+                        resolve(data)
+                    },
+                    error: function(err) {
+                        reject(err)
+                    }     
+                })
+            });
         }
     </script>
 </body>

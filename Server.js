@@ -34,37 +34,6 @@ let cartasNaMesa=[];
 //acabou de se conectar
 io.on('connection',socket=>{
 
-    var playerObj={'id':socket.id, 'cards':[
-        {
-            'name':'Carta 1',
-            'value':2,
-            'type':'Carta normal',
-            'desc':'é apenas uma carta normal',
-            'quantity':2
-        },
-        {
-            'name':'Carta 2',
-            'value':3,
-            'type':'Carta não normal',
-            'desc':'É apenas uma carta não normal',
-            'quantity':3
-        },      
-        {
-            'name':'Carta 3',
-            'value':4,
-            'type':'Carta rara',
-            'desc':'É apenas uma carta rara',
-            'quantity':2
-        }]};
-    players.push(playerObj);
-
-    var roundPlayer={'playerRound':players.length-1,'actualRound':round,'playerObj':playerObj};
-
-    socket.emit('initialRound',roundPlayer);
-    socket.emit('previousMessages',messages);
-    socket.emit('previousPlayers',players)
-    socket.broadcast.emit('newPlayer',playerObj);
-
     socket.on('sendMessage', data=>{
         messages.push(data);
         socket.broadcast.emit('receivedMessage',data);
@@ -85,6 +54,39 @@ io.on('connection',socket=>{
         cartasNaMesa.push(card);
         console.log("throw card");
         socket.broadcast.emit('updateLastCard',card.name);
+    });
+
+    socket.on('newPlayerAuthenticate',user=>{
+        var playerObj={'id':socket.id,'userName':user.userName, 'userId': user.userId, 'token':user.token,'cards':[
+            {
+                'name':'Carta 1',
+                'value':2,
+                'type':'Carta normal',
+                'desc':'é apenas uma carta normal',
+                'quantity':2
+            },
+            {
+                'name':'Carta 2',
+                'value':3,
+                'type':'Carta não normal',
+                'desc':'É apenas uma carta não normal',
+                'quantity':3
+            },      
+            {
+                'name':'Carta 3',
+                'value':4,
+                'type':'Carta rara',
+                'desc':'É apenas uma carta rara',
+                'quantity':2
+            }]};
+        players.push(playerObj);
+    
+        var roundPlayer={'playerRound':players.length-1,'actualRound':round,'playerObj':playerObj};
+    
+        socket.emit('initialRound',roundPlayer);
+        socket.emit('previousMessages',messages);
+        socket.emit('previousPlayers',players)
+        socket.broadcast.emit('newPlayer',playerObj);
     });
 
 });
