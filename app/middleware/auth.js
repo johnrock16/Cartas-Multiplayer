@@ -13,8 +13,8 @@ module.exports= (req,res,next)=>{
         return res.status(401).send({'error': 'token error'});
     
     const [ scheme, token] = parts;
-    // if(!/^Bearer$/i.test(scheme))
-    //     return res.status(401).send({'error':'token has a bad formatted'});
+    if(!/^Bearer$/i.test(scheme))
+        return res.status(401).send({'error':'token has a bad formatted'});
     
     jwt.verify(token, authConfig.secret, (err,decoded)=>{
         if(err) 

@@ -13,6 +13,11 @@ const UserSchema = new mongoose.Schema({
         required:true,
         select: false
     },
+    lastToken:{
+        type:String,
+        required:false,
+        default:0
+    },
     createdAt:{
         type: Date,
         default: Date.now

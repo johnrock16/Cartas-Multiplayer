@@ -213,6 +213,7 @@
     <script type="text/javascript">
         var baseUrl='http://localhost:3000'
         var socket = io(baseUrl);
+        var disconnect=true;
 
         var playerRound=0;
         var actualRound=0;
@@ -239,12 +240,14 @@
         });
 
         socket.on('previousMessages',function(messages){
+            if(disconnect) return;
             messages.forEach(message => {
                 renderMessage(message);
             });
         })
 
         socket.on('receivedMessage',function(message){
+            if(disconnect) return;
             renderMessage(message);
         });
 
@@ -261,6 +264,7 @@
         });
 
         socket.on('newPlayer', function(newPlayer){
+            if(disconnect) return;
             if(playerObj.userId!=newPlayer.userId){
                 players.push(newPlayer);
                 playerEntered(newPlayer.userName);
@@ -279,6 +283,11 @@
         socket.on('updateLastCard',function(card){
             console.log("updateLastCard");
             renderLastCard(card);
+        });
+
+        socket.on('removePlayer',function(userName){
+            $('#'+userName+'').remove();
+            console.log('sessao expirou');
         });
 
 
@@ -315,7 +324,7 @@
         }
 
         function playerEntered(id){
-            $('.list-players').append('<div class="player col-12" onclick="seePlayerCards('+id+')"> <p>Player '+id+'</p></div>');
+            $('.list-players').append('<div class="player col-12" id='+id+' onclick="seePlayerCards('+id+')"> <p>'+id+'</p></div>');
         }
 
         function seePlayerCards(id){
@@ -333,8 +342,12 @@
                 'userId':data.user._id,
                 'token':data.token
             };
+            disconnect=false;
             socket.emit('newPlayerAuthenticate',playerUser);
             openOrCloseModal();
+            setInterval(() => {
+                verificaToken();
+            }, 5000);
         }
 
         function login(){
@@ -377,6 +390,25 @@
                         reject(err)
                     }     
                 })
+            });
+        }
+        function verificaToken(){
+            $.ajax({
+                url: baseUrl+"/users",
+                type: "POST",
+                data:{
+                    '_id':playerUser.userId,
+                    'lastToken':playerUser.token
+                },
+                headers: { 'authorization':'Bearer '+playerUser.token },
+                success: function(callback) { 
+                    console.log(callback);
+                    if(!callback.ok){
+                        location.reload();
+                        socket.emit('sessionExpired',playerUser.userName);
+                        socket.disconnect();
+                    }
+                }
             });
         }
     </script>

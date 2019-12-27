@@ -8,13 +8,19 @@ const router= express.Router();
 
 router.post('/register',async(req,res)=>{
     const{userName} = req.body;
+    console.log(req.body);
     try{
         if(await User.findOne({userName}))
             return res.status(400).send({'error':'User already exists'});
 
         const user= await User.create(req.body);
+
+        user.password=req.body.password;
+        user.lastToken=generateToken({'id':user.id});    
+        await user.save();
         user.password=undefined;
-        return res.send({user,token:generateToken({'id':user.id})});
+        
+        return res.send({user,token:user.lastToken});
     }
     catch{
         return res.status(400).send({error:'Registration failed'});
@@ -23,6 +29,7 @@ router.post('/register',async(req,res)=>{
 
 router.post('/authenticate',async(req,res)=>{
     const { userName, password} = req.body;
+    console.log(req.body);
 
     const user= await User.findOne({userName}).select('+password');
 
@@ -32,9 +39,12 @@ router.post('/authenticate',async(req,res)=>{
     if(!await bcrypt.compare(password, user.password))     
         return res.status(400).send({'error':'Invalid password'});
 
+    user.password=password;
+    user.lastToken=generateToken({'id':user.id});
+    await user.save();
     user.password=undefined;
 
-    res.send({user,token:generateToken({'id':user.id})});
+    res.send({user,token:user.lastToken});
 });
 
 module.exports=(app)=>app.use('/auth',router);

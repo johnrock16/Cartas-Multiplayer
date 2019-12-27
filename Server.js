@@ -85,8 +85,12 @@ io.on('connection',socket=>{
     
         socket.emit('initialRound',roundPlayer);
         socket.emit('previousMessages',messages);
-        socket.emit('previousPlayers',players)
+        socket.emit('previousPlayers',players);
         socket.broadcast.emit('newPlayer',playerObj);
+        socket.on('sessionExpired',userName=>{
+            console.log('sessao expirou');
+            socket.broadcast.emit('removePlayer',userName);
+        });
     });
 
 });
