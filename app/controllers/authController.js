@@ -8,7 +8,6 @@ const router= express.Router();
 
 router.post('/register',async(req,res)=>{
     const{userName} = req.body;
-    console.log(req.body);
     try{
         if(await User.findOne({userName}))
             return res.status(400).send({'error':'User already exists'});
@@ -29,7 +28,6 @@ router.post('/register',async(req,res)=>{
 
 router.post('/authenticate',async(req,res)=>{
     const { userName, password} = req.body;
-    console.log(req.body);
 
     const user= await User.findOne({userName}).select('+password');
 
@@ -50,5 +48,5 @@ router.post('/authenticate',async(req,res)=>{
 module.exports=(app)=>app.use('/auth',router);
 
 function generateToken(params={}){
-    return jwt.sign({params}, authConfig.secret,{expiresIn: 7200});
+    return jwt.sign({params}, authConfig.secret,{expiresIn: 720000});
 }

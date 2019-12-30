@@ -13,6 +13,11 @@
     <!-- <link rel="stylesheet" href="styles.css"> -->
 </head>
 <body>
+<link rel="stylesheet" href="./css/index.css"></style>
+<script src="./js/restManipulator.js"></script>
+<script src="./js/user.js"></script>
+<script src="./js/domManipulator.js"></script>
+<script src="./js/socketManipulator.js"></script>
   <div class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -25,8 +30,8 @@
         <p>Senha</p>
         <input type="password" id="txtPasswordLogin"></input>
         <div class="modal-btns">
-          <button id="btnLogin" onclick="register()">Cadastre-se</button>
-          <button id="btnLogin" onclick="login()">Login</button>
+          <button id="btnLogin" onclick="registerOrLogin('register')">Cadastre-se</button>
+          <button id="btnLogin" onclick="registerOrLogin('authenticate')">Login</button>
         </div>
       </div>
       <div class="modal-footer"></div>
@@ -47,370 +52,52 @@
           </div>
           <div class="chat col-6">
             <form class="chat-area" id="chat">
-                <!-- <input type="text" id="txtUsername" placeholder="digite seu usuario"> -->
                 <div class="messages"></div>
                 <input type="text" id="txtMessage" placeholder="Digite sua mensagem">
                 <button type="submit">Enviar</button>
             </form>
           </div>
         </div>
-        <div class="game">
-           
-            <div class="buttons">
-                <button id="btnPass" onclick="roundsEnd()">Passar a vez</input>
-            </div>
+            <button id="btnPass" onclick="roundsEnd()">Passar a vez</input>
         </div>
-      </div>
-    
-
-    <style>
-        .players{
-            background-color: aqua;
-            height:450px;
-        }
-        .player{
-            background-color: lightgrey;
-            margin-top: 1%;
-            height: 40px;
-        }
-        .last-card{
-            background-color: lightgrey;
-            height: 450px;
-        }
-        .propertys{
-            background-color: lightsteelblue;
-            height: 450px;
-        }
-        .cartas-mao{
-            background-color: lightblue;
-            /* margin-top: -300px; */
-            height: 300px;
-        }
-        .chat{
-            background-color: lightskyblue;
-            /* margin-top: -300px; */
-            height: 300px;
-        }
-        .chat-area{
-            background-color: white;
-            height: 90%;
-            margin-top: 10px;
-        }
-        .messages{
-            background-color: lightgray;
-            height: 75%;
-            overflow: scroll;
-        }
-        .action-card{
-            width: 20%;
-            height: 40%;
-            padding-right: 1%;
-            margin-top: 1%;
-        }
-        .last-card-throw{
-            width: 50%;
-            height: 55%;
-            margin-left: 20%;
-            margin-top: 45%;
-        }
-
-        :root {
-            --modal-duration: 1s;
-            --modal-color: #222222;
-        }
-
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f4f4f4;
-            font-size: 17px;
-            line-height: 1.6;
-            display: flex;
-            height: 100vh;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1;
-            left: 0;
-            top: 0;
-            height: 100%;
-            width: 100%;
-            overflow: none;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-
-        .modal.open{
-            display : block;
-        }
-        
-
-        .modal-content {
-            margin: 10% auto;
-            width: 60%;
-            box-shadow: 0 5px 8px 0 rgba(0, 0, 0, 0.2), 0 7px 20px 0 rgba(0, 0, 0, 0.17);
-            animation-name: modalopen;
-            animation-duration: var(--modal-duration);
-        }
-
-        .modal-header h2,.modal-footer h3 {
-            margin: 0;
-        }
-
-        .modal-header {
-            background: var(--modal-color);
-            padding: 15px;
-            color: #fff;
-            border-top-left-radius: 5px;
-            border-top-right-radius: 5px;
-        }
-
-        .modal-body {
-            padding: 10px 20px;
-            background: #fff;
-        }
-
-        .modal-btns{
-            margin-top: 1%;
-        }
-
-        .modal-footer {
-            background: var(--modal-color);
-            padding: 10px;
-            color: #fff;
-            text-align: center;
-            border-bottom-left-radius: 5px;
-            border-bottom-right-radius: 5px;
-        }
-
-        /* .close {
-            color: #ccc;
-            float: right;
-            font-size: 30px;
-            color: #fff;
-        }
-
-        .close:hover,
-        .close:focus {
-            color: #000;
-            text-decoration: none;
-            cursor: pointer;
-        } */
-
-        @keyframes modalopen {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-
-    </style>
+      </div>  
 
     <script type="text/javascript">
-        var baseUrl='http://localhost:3000'
-        var socket = io(baseUrl);
-        var disconnect=true;
+        var baseUrl="http://localhost:3000";
 
-        var playerRound=0;
-        var actualRound=0;
+        var restConnection=new RestManipule(baseUrl);
+        var user= new User(restConnection);
+        var domManipula=new DomManipule();
+        var socket;
 
-        var playerUser={};
+        domManipula.openOrCloseModal();
 
-        var players=[];
-        var playerObj={};       
+        function throwCard(i){socket.throwCard(i);}
+        function seePlayerCards(id){domManipula.seePlayerCards(id);}
+        function roundsEnd(){socket.roundsEnd();}
 
-        openOrCloseModal();
-
-        $('#chat').submit(function(event){
-            event.preventDefault();
-            var message=$('#txtMessage').val();
-
-            if(message.length){
-                var obj={
-                    'author':playerUser.userName,
-                    'message':message
-                };
-                socket.emit('sendMessage',obj);
-                renderMessage(obj);
-            }
-        });
-
-        socket.on('previousMessages',function(messages){
-            if(disconnect) return;
-            messages.forEach(message => {
-                renderMessage(message);
-            });
-        })
-
-        socket.on('receivedMessage',function(message){
-            if(disconnect) return;
-            renderMessage(message);
-        });
-
-        socket.on('initialRound',function(player){
-            actualRound=player.actualRound;
-            playerRound=player.playerRound;
-            playerObj=player.playerObj;
-            renderCards();
-        });
-
-        socket.on('nextRound', function(round){
-            actualRound=round;
-            console.log("trocou de round "+round);
-        });
-
-        socket.on('newPlayer', function(newPlayer){
-            if(disconnect) return;
-            if(playerObj.userId!=newPlayer.userId){
-                players.push(newPlayer);
-                playerEntered(newPlayer.userName);
-                console.log("novo player entrou "+newPlayer.userName);
-                console.log(players);
-            }
-        });
-
-        socket.on('previousPlayers',function(previousPlayers){
-            previousPlayers.forEach(newPlayer => {
-                players.push(newPlayer);
-                playerEntered(newPlayer.userName);
-            });
-        });
-
-        socket.on('updateLastCard',function(card){
-            console.log("updateLastCard");
-            renderLastCard(card);
-        });
-
-        socket.on('removePlayer',function(userName){
-            $('#'+userName+'').remove();
-            console.log('sessao expirou');
-        });
-
-
-        function renderMessage(message){
-            $('.messages').append('<div class="message"><strong>'+message.author+':</strong><span>'+message.message+'</span></div>');
-        }
-
-        function renderLastCard(card){
-            console.log(card);
-            $('.last-card').empty();
-            $('.last-card').append('<img class="last-card-throw" src="./img/'+card+'.jpg"></img>');
-        }
-
-        function renderCards(){
-            $('.yourCards').empty();
-            for(var i=0;i<playerObj.cards.length;i++){
-                $('.yourCards').append('<img class="action-card" src="./img/'+playerObj.cards[i].name+'.jpg" onclick="throwCard('+i+')"></img>');
-            }
-        }
-
-        function roundsEnd(){
-            if(playerRound==actualRound){
-                socket.emit('roundsEnd',playerRound);
-            }
-        }
-
-        function throwCard(index){
-            if(playerRound==actualRound){
-                socket.emit('throwCard',playerObj.cards[index]);
-                renderLastCard(playerObj.cards[index].name);
-                playerObj.cards.splice(index,1);
-                renderCards();
-            }  
-        }
-
-        function playerEntered(id){
-            $('.list-players').append('<div class="player col-12" id='+id+' onclick="seePlayerCards('+id+')"> <p>'+id+'</p></div>');
-        }
-
-        function seePlayerCards(id){
-            console.log("você esta vendo na teoria as cartas do player "+id);
-        }
-
-        function openOrCloseModal() {
-            $('.modal').toggleClass('open');
-        }
-
-        function initiateGame(user,data){
+        function initiateGame(userInfo,data){
             playerUser={
-                'userName':user.userName,
-                'password':user.password,
+                'userName':userInfo.userName,
+                'password':userInfo.password,
                 'userId':data.user._id,
                 'token':data.token
             };
-            disconnect=false;
-            socket.emit('newPlayerAuthenticate',playerUser);
-            openOrCloseModal();
+            user.setPlayerUser(playerUser);
+            socket=new SocketManipule(baseUrl,playerUser);
+            domManipula.openOrCloseModal();
             setInterval(() => {
-                verificaToken();
+                user.verificaToken();
             }, 5000);
         }
 
-        function login(){
-            var user=getUserInfos()
-            var response= restServices('/auth/authenticate','POST',JSON.stringify(user)).then(function(data){
-                initiateGame(user,data);
-            }).catch(function(error){
-                console.log("falha ao fazer login");
-            });
-        }
-
-        function register(){
-            var user=getUserInfos();
-            restServices('/auth/register','POST',JSON.stringify(user)).then(function(data){
-                initiateGame(user,data);
-            }).catch(function(error){
-                console.log("falha ao cadastrar");
-            });
-        }
-
-        function getUserInfos(){
-            var user={
-                password: $('#txtPasswordLogin').val(),
-                userName: $('#txtUsernameLogin').val()
+        async function registerOrLogin(path){
+            var userInfo=domManipula.getUserInfos();
+            var reponse= await user.registerOrLogin(userInfo,path);
+            if(reponse.status){
+                initiateGame(reponse.user,reponse.data);
             }
-            return user;
-        }
-
-        function restServices(local,type,data){
-            return new Promise(function(resolve, reject) {
-                $.ajax({
-                    'url':baseUrl+''+local,
-                    'type':type,
-                    'data':data,
-                    'contentType': "application/json",
-                    success: function(data) {
-                        resolve(data)
-                    },
-                    error: function(err) {
-                        reject(err)
-                    }     
-                })
-            });
-        }
-        function verificaToken(){
-            $.ajax({
-                url: baseUrl+"/users",
-                type: "POST",
-                data:{
-                    '_id':playerUser.userId,
-                    'lastToken':playerUser.token
-                },
-                headers: { 'authorization':'Bearer '+playerUser.token },
-                success: function(callback) { 
-                    console.log(callback);
-                    if(!callback.ok){
-                        location.reload();
-                        socket.emit('sessionExpired',playerUser.userName);
-                        socket.disconnect();
-                    }
-                }
-            });
-        }
+        }  
     </script>
 </body>
 </html>
