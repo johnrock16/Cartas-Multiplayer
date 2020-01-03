@@ -1,16 +1,17 @@
-class User{
+export default  class User{
     constructor(restConnection){
         this.restConnection=restConnection;
-        this.registerOrLogin=this.registerOrLogin.bind();
-        this.verificaToken=this.verificaToken.bind();
+        this.registerOrLogin=this.registerOrLogin.bind(this);
+        this.verificaToken=this.verificaToken.bind(this);
         this.getPlayerUser=this.getPlayerUser.bind(this);
         this.setPlayerUser=this.setPlayerUser.bind(this);
     }
     playerUser;
     restConnection;
+    socket;
     
     registerOrLogin(user,path){
-        return restConnection.restServices('/auth/'+path,'POST',JSON.stringify(user)).then(function(data){
+        return this.restConnection.restServices('/auth/'+path,'POST',JSON.stringify(user)).then(function(data){
             return {'status':true,'user':user,'data':data};
         }).catch(function(error){
             return {'status':false,'data':error};
@@ -18,20 +19,19 @@ class User{
     }
 
     verificaToken(){
-        var data={'_id':playerUser.userId,'lastToken':playerUser.token};
-        var headers= {'headers':{'authorization':'Bearer '+playerUser.token}};
-        restConnection.restServices('/users','POST',data,headers).then(function(data){
+        var data={'_id':this.playerUser.userId,'lastToken':this.playerUser.token};
+        var headers= {'headers':{'authorization':'Bearer '+this.playerUser.token}};
+        this.restConnection.restServices('/users','POST',data,headers).then(function(data){
             if(!data.ok){
                 location.reload(); 
-                socket.emit('sessionExpired',playerUser.userName);
-                socket.disconnect();
+                this.socket.emit('sessionExpired',playerUser.userName);
+                this.socket.disconnect();
             }
         }).catch(function(error){
             console.log("erro ao verificar o token");
         });
     }
     
-
     setPlayerUser(player){
         this.playerUser=player;
     }
@@ -40,4 +40,11 @@ class User{
         return this.playerUser;
     }
 
+    setSocket(socket){
+        this.socket=socket;
+    }
+    
+    getSocket(){
+        return this.socket;
+    }
 }

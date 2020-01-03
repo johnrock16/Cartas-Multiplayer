@@ -1,4 +1,4 @@
-class DomManipule{
+export default class DomManipule{
 
     constructor(){
         this.renderCards=this.renderCards.bind(this);
@@ -10,10 +10,11 @@ class DomManipule{
         this.openOrCloseModal=this.openOrCloseModal.bind(this);
     }
 
-    renderCards(cards){
+    renderCards(cards,func){
         $('.yourCards').empty();
         for(var i=0;i<cards.length;i++){
-            $('.yourCards').append('<img class="action-card" src="./img/'+cards[i].name+'.jpg" onclick="throwCard('+i+')"></img>');
+            $('.yourCards').append('<img class="action-card" id="card'+i+'" src="./img/'+cards[i].name+'.jpg"></img>');
+            this.addEvent('#card'+i+'','click',func,i);
         }
     }
 
@@ -46,4 +47,9 @@ class DomManipule{
         $('.modal').toggleClass('open');
     }
 
+    addEvent(where,type,func,params){
+        document.querySelector(where).addEventListener(type, ()=>{
+            func(params);
+        });
+    }
 }

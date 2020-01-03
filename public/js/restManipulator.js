@@ -1,4 +1,4 @@
-class RestManipule{
+export default class RestManipule{
 
     constructor(base_url){
         this.base_url=base_url;
@@ -33,5 +33,4 @@ class RestManipule{
     getBaseUrl(){
         return this.base_url;
     }
-
 }

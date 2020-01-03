@@ -1,4 +1,5 @@
-class SocketManipule{
+import DomManipule from './domManipulator.js';
+export default class SocketManipule{
 
     constructor(baseUrl,playerUser){
         this.socket=io(baseUrl);
@@ -57,12 +58,11 @@ class SocketManipule{
             this.actualRound=player.actualRound;
             this.playerRound=player.playerRound;
             this.playerObj=player.playerObj;
-            this.domManipule.renderCards(this.playerObj.cards);
+            this.domManipule.renderCards(this.playerObj.cards,this.throwCard);
         });
     
         this.socket.on('nextRound', (round)=>{
             this.actualRound=round;
-            console.log("trocou de round "+round);
         });
     
         this.socket.on('newPlayer', (newPlayer)=>{
@@ -71,7 +71,6 @@ class SocketManipule{
                 this.players.push(newPlayer);
                 this.domManipule.playerEntered(newPlayer.userName);
                 console.log("novo player entrou "+newPlayer.userName);
-                console.log(this.players);
             }
         });
     
@@ -83,24 +82,13 @@ class SocketManipule{
         });
     
         this.socket.on('updateLastCard',(card)=>{
-            console.log("updateLastCard");
             this.domManipule.renderLastCard(card);
         });
     
         this.socket.on('removePlayer',(userName)=>{
             $('#'+userName+'').remove();
-            console.log('sessao expirou');
         });
     }
-
-    setDisconnect(disconnect){
-        this.disconnect=disconnect;
-    }
-
-    getDisconnect(){
-        return this.disconnect;
-    }
-    
 
     roundsEnd(){
         if(this.playerRound==this.actualRound){
@@ -113,9 +101,15 @@ class SocketManipule{
             this.socket.emit('throwCard',this.playerObj.cards[index]);
             this.domManipule.renderLastCard(this.playerObj.cards[index].name);
             this.playerObj.cards.splice(index,1);
-            this.domManipule.renderCards(this.playerObj.cards);
+            this.domManipule.renderCards(this.playerObj.cards,this.throwCard);
         }  
     }
 
-    
+    setDisconnect(disconnect){
+        this.disconnect=disconnect;
+    }
+
+    getDisconnect(){
+        return this.disconnect;
+    }
 }
